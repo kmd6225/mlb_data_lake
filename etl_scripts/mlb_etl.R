@@ -37,7 +37,7 @@ get_pitches <- function(start_date, month, team, delta){
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches('2023-04-01', '04', 'Colorado Rockies', 30)
+pitches <- get_pitches('2023-04-01', '04', 'San Diego Padres', 30)
 
 #select only relevant columns
 
@@ -157,5 +157,5 @@ con <- dbConnect(odbc(),
                       Database = "mlb",
                       Port = 1433)
 
-dbWriteTable(con, 'pitch_stg', pitches_filtered_renamed, append = FALSE, temporary = FALSE,
-             overwrite = TRUE, row.names = F, 'set encoding UTF-8', field.types = dtypes, batch_rows = 1)
+dbWriteTable(con, 'pitch_stg', pitches_filtered_renamed, append = TRUE, temporary = FALSE,
+             overwrite = FALSE, row.names = F, 'set encoding UTF-8', field.types = NULL, batch_rows = 1)

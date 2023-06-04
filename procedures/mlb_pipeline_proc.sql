@@ -15,7 +15,7 @@ as
 		begin 
 			declare @current_table1 nvarchar(max) = 'new_pitch_tbl'
 			declare @dyn_sql1 nvarchar(max)
-			set @dyn_sql1 = 'drop table' + @current_table1
+			set @dyn_sql1 = 'drop table ' + @current_table1
 			execute sp_executesql @dyn_sql1
 			end
 
