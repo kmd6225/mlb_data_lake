@@ -37,7 +37,7 @@ get_pitches <- function(start_date, month, team, delta){
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches('2023-04-01', '04', 'San Diego Padres', 30)
+pitches <- get_pitches('2023-04-01', '04', 'New York Yankees', 30)
 
 #select only relevant columns
 
