@@ -8,10 +8,17 @@ library(odbc)
 library(DBI)
 library(data.table)
 
+as.integer('5')
 
 #-------------------------get pitch by pitch data for each game-------------------------------------
 
 #function for extracting pitch by pitch data
+
+start_dat <- '2023-04-01'
+inc <- 30
+mnth <- '04'
+tm <- 'Colorado Rockies'
+
 
 get_pitches <- function(start_date, month,delta,team){
   game_ids <- get_game_pks_mlb(start_date, 1)
@@ -39,7 +46,7 @@ get_pitches <- function(start_date, month,delta,team){
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches('2023-05-01', '05', 2, 'Colorado Rockies')
+pitches <- get_pitches(start_dat, mnth, inc, tm)
 
 #select only relevant columns
 
@@ -104,54 +111,7 @@ new_col_names <- c('game_key',
 pitches_filtered_renamed <- setnames(pitches_filtered, old = col_names,
                                      new = new_col_names )
 
-dtypes <- c('nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)')
 
-names(dtypes) <- new_col_names
 
 # Write to SQL server
 
@@ -161,6 +121,9 @@ con <- dbConnect(odbc(),
                       Database = "mlb",
                       Port = 1433)
 
-dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = FALSE, temporary = FALSE,
-             overwrite = TRUE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
+dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = TRUE, temporary = FALSE,
+             overwrite = FALSE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
              field.types = NULL, batch_rows = 1)
+
+dbGetQuery(con, 'exec dbo.mlb_pipeline @is_first_run = 0')
+
