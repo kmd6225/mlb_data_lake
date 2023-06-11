@@ -7,11 +7,13 @@ library(reshape)
 library(odbc)
 library(DBI)
 library(data.table)
+
+
 #-------------------------get pitch by pitch data for each game-------------------------------------
 
 #function for extracting pitch by pitch data
 
-get_pitches <- function(start_date, month, team, delta){
+get_pitches <- function(start_date, month,delta,team){
   game_ids <- get_game_pks_mlb(start_date, 1)
   
   increment <- 1
@@ -22,26 +24,26 @@ get_pitches <- function(start_date, month, team, delta){
   }
   
   keys <- game_ids[game_ids$teams.home.team.name == team | teams.away.team.name == team]$game_pk
-  
   #get all pitches 
   
   pitches <- get_pbp_mlb(keys[1])
   
-  for (k in 2:length(keys)){
- 
-    current_key <- keys[k]
-    
-    pitches <- rbind(pitches, get_pbp_mlb(current_key), fill = TRUE)}
+  if (length(keys) >= 2){
   
+    for (k in 2:length(keys)){
+   
+      current_key <- keys[k]
+      
+      pitches <- rbind(pitches, get_pbp_mlb(current_key), fill = TRUE)}}
   return(pitches)}
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches('2023-04-01', '04', 'New York Yankees', 30)
+pitches <- get_pitches('2023-05-01', '05', 2, 'Colorado Rockies')
 
 #select only relevant columns
 
-pitches_filtered <-pitches %>% select(game_pk, game_date,isPitch, pitchNumber, details.type.code,  
+pitches_filtered <-pitches %>% select(game_pk, game_date,startTime, isPitch, pitchNumber, details.type.code,  
                               details.event, details.call.description, details.homeScore, details.awayScore, details.isInPlay,
                               details.isStrike, details.isBall, count.balls.start,count.strikes.start,count.outs.start,
                               player.id,pitchData.coordinates.x, pitchData.coordinates.y, result.type, result.event,
@@ -54,6 +56,7 @@ pitches_filtered <-pitches %>% select(game_pk, game_date,isPitch, pitchNumber, d
 col_names <- colnames(pitches_filtered)
 new_col_names <- c('game_key',
                    'game_date',
+                   'start_time',
                    'is_Pitch',
                    'details_type_code',
                    'pitch_Number',
@@ -101,36 +104,7 @@ new_col_names <- c('game_key',
 pitches_filtered_renamed <- setnames(pitches_filtered, old = col_names,
                                      new = new_col_names )
 
-dtypes <- c('int',
-            'date',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'int',
-            'int',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'int',
-            'int',
-            'int',
-            'int',
-            'numeric',
-            'numeric',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'int',
-            'int',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'nvarchar(max)',
-            'int',
-            'varchar(max)',
-            'varchar(max)',
-            'int',
+dtypes <- c('nvarchar(max)',
             'nvarchar(max)',
             'nvarchar(max)',
             'nvarchar(max)',
@@ -138,13 +112,43 @@ dtypes <- c('int',
             'nvarchar(max)',
             'nvarchar(max)',
             'nvarchar(max)',
-            'numeric',
-           'numeric',
-            'int',
-            'int',
-            'numeric',
-            'numeric',
-            'numeric',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
+            'nvarchar(max)',
             'nvarchar(max)')
 
 names(dtypes) <- new_col_names
@@ -157,5 +161,6 @@ con <- dbConnect(odbc(),
                       Database = "mlb",
                       Port = 1433)
 
-dbWriteTable(con, 'pitch_stg', pitches_filtered_renamed, append = TRUE, temporary = FALSE,
-             overwrite = FALSE, row.names = F, 'set encoding UTF-8', field.types = NULL, batch_rows = 1)
+dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = FALSE, temporary = FALSE,
+             overwrite = TRUE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
+             field.types = NULL, batch_rows = 1)

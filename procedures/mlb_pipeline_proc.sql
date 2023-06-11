@@ -6,7 +6,7 @@ as
 			declare @current_table nvarchar(max) = 'first_run_pitch_vw'
 			declare @target_table nvarchar(max) = 'pitch_fact'
 			declare @dyn_sql nvarchar(max)  
-			set @dyn_sql = 'insert into ' + @target_table + ' select * from ' + @current_table
+			set @dyn_sql = 'select * into ' + @target_table + ' from ' + @current_table
 			execute sp_executesql @dyn_sql
 			end
 		else

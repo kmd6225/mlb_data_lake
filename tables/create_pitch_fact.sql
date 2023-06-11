@@ -1,6 +1,7 @@
 create table pitch_fact(
 game_key nvarchar(max),
 game_date date,
+start_time nvarchar(max),
 is_Pitch int,
 pitch_count int,
 pitch_type nvarchar(max), 

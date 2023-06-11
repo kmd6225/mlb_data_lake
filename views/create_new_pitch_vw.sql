@@ -100,6 +100,7 @@ where is_Pitch = 1
 
 select distinct game_key,
 game_date,
+start_time,
 is_Pitch,
 details_type_code,
 pitch_Number,
@@ -142,6 +143,8 @@ pitch_Data_breaks_spin_Rate,
 hit_Data_launch_Speed,
 hit_Data_launch_Angle,
 hit_Data_total_Distance,
-result_is_Out
+result_is_Out,
+row_number() over(partition by game_key, matchup_pitcher_id order by start_time) as game_pitch_number
 from new_pitches 
 where pitch_key not in (select pitch_key from old_pitches)
+
