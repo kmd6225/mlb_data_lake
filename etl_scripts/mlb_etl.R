@@ -8,45 +8,32 @@ library(odbc)
 library(DBI)
 library(data.table)
 
-as.integer('5')
+
 
 #-------------------------get pitch by pitch data for each game-------------------------------------
 
 #function for extracting pitch by pitch data
 
-start_dat <- '2023-04-01'
-inc <- 30
-mnth <- '04'
+start_dat <- '2023-04-05'
 tm <- 'Colorado Rockies'
 
 
-get_pitches <- function(start_date, month,delta,team){
-  game_ids <- get_game_pks_mlb(start_date, 1)
+get_pitches <- function(start_date,team){
+  game_ids <- get_game_pks_mlb(start_date)
   
-  increment <- 1
   
-  for (i in 2:delta){
-    increment <- i
-    game_ids <- rbind(game_ids, get_game_pks_mlb(paste0('2023-',month,'-', increment), 1), fill = TRUE)
-  }
   
   keys <- game_ids[game_ids$teams.home.team.name == team | teams.away.team.name == team]$game_pk
   #get all pitches 
   
   pitches <- get_pbp_mlb(keys[1])
   
-  if (length(keys) >= 2){
-  
-    for (k in 2:length(keys)){
-   
-      current_key <- keys[k]
-      
-      pitches <- rbind(pitches, get_pbp_mlb(current_key), fill = TRUE)}}
+ 
   return(pitches)}
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches(start_dat, mnth, inc, tm)
+pitches <- get_pitches(start_dat, tm)
 
 #select only relevant columns
 
