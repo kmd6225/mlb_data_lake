@@ -1,46 +1,36 @@
 
 
-library(ggplot2)
-library(dplyr)
 library(baseballr)
-library(reshape)
-library(odbc)
 library(DBI)
+library(bigrquery)
+library(dplyr)
 library(data.table)
-
-
 #-------------------------get pitch by pitch data for each game-------------------------------------
 
 # connect to the db
 
-con <- dbConnect(odbc(),
-                 Driver = "SQL Server",
-                 Server = "KEVIN_laptop",
-                 Database = "mlb_dev",
-                 Port = 1433)
+con <- dbConnect(bigquery(),
+                 project = 'apt-terrain-390117' ,
+                 dataset = 'mlb_db',
+                 billing = 'apt-terrain-390117')
 
 
 #function for extracting pitch by pitch data
 
-start_dat <- dbGetQuery(con, 'select max(game_date) from config_param')
+start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
+
 is_first_run <- dbGetQuery(con, "select case when game_date = (select max(game_date) from config_param) then 1 else 0 end
-		from config_param
+		from mlb_db.config_param
 		where prev_run_status = 'initial run'")
-inc <- 30
-end_dat <- as.Date(start_dat[[1]][1]) + 30
 tm <- 'Colorado Rockies'
 
-sql_interval <- as.integer(difftime(end_dat , as.Date(start_dat[[1]][1]), 'days')) + 1
+sql_interval <-  1
 
-get_pitches <- function(start_date, delta,team){
+get_pitches <- function(start_date, team){
   game_ids <- get_game_pks_mlb(start_date)
   
   
-  for (i in 2:delta){
-    start_date <- as.character(as.Date(start_date) + 1)
-    game_ids <- rbind(game_ids, get_game_pks_mlb(start_date), fill = TRUE)
-  }
-  keys <- game_ids[game_ids$teams.home.team.name == team | teams.away.team.name == team]$game_pk
+  keys <- game_ids[game_ids$teams.home.team.name == team | game_ids$teams.away.team.name == team,]$game_pk
   #get all pitches 
   
   pitches <- get_pbp_mlb(keys[1])
@@ -57,9 +47,13 @@ get_pitches <- function(start_date, delta,team){
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches(start_dat, mnth, inc, tm)
+pitches <- get_pitches(start_dat[[1]][1], tm)
 
 #select only relevant columns
+
+if (nrow(pitches) > 0){
+
+
 
 pitches_filtered <-pitches %>% select(game_pk, game_date,startTime, isPitch, pitchNumber, details.type.code,  
                               details.event, details.call.description, details.homeScore, details.awayScore, details.isInPlay,
@@ -126,17 +120,19 @@ pitches_filtered_renamed <- setnames(pitches_filtered, old = col_names,
 
 # Write to SQL server
 
-if (is_first_run){
-  dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = FALSE, temporary = FALSE,
-               overwrite = TRUE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
-               field.types = NULL, batch_rows = 1)
+if (is_first_run == 1){
+  stg <- bq_table(project = 'apt-terrain-390117', dataset = 'mlb_db', table = 'pitch_stg')
+
+ bq_table_upload(x=stg, values=data.frame(pitches_filtered_renamed), create_disposition='CREATE_IF_NEEDED', write_disposition='WRITE_APPEND')
+
 } else{
 
-dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = TRUE, temporary = FALSE,
+dbWriteTable(con, 'mlb_db.pitch_stg', data.frame(pitches_filtered_renamed), append = TRUE, temporary = FALSE,
              overwrite = FALSE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
              field.types = NULL, batch_rows = 1)}
+}
 
-dbGetQuery(con, paste('exec mlb_pipeline @is_first_run = ' , is_first_run[[1]][1] , ' @interval = ' , sql_interval, sep = ''))
+#dbGetQuery(con, paste('exec mlb_pipeline @is_first_run = ' , is_first_run[[1]][1] , ' @interval = ' , sql_interval, sep = ''))
 
 dbDisconnect(con)
 
