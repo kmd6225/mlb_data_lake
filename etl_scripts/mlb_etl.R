@@ -9,31 +9,55 @@ library(DBI)
 library(data.table)
 
 
-
 #-------------------------get pitch by pitch data for each game-------------------------------------
+
+# connect to the db
+
+con <- dbConnect(odbc(),
+                 Driver = "SQL Server",
+                 Server = "KEVIN_laptop",
+                 Database = "mlb_dev",
+                 Port = 1433)
+
 
 #function for extracting pitch by pitch data
 
-start_dat <- '2023-04-05'
+start_dat <- dbGetQuery(con, 'select max(game_date) from config_param')
+is_first_run <- dbGetQuery(con, "select case when game_date = (select max(game_date) from config_param) then 1 else 0 end
+		from config_param
+		where prev_run_status = 'initial run'")
+inc <- 30
+end_dat <- as.Date(start_dat[[1]][1]) + 30
 tm <- 'Colorado Rockies'
 
+sql_interval <- as.integer(difftime(end_dat , as.Date(start_dat[[1]][1]), 'days')) + 1
 
-get_pitches <- function(start_date,team){
+get_pitches <- function(start_date, delta,team){
   game_ids <- get_game_pks_mlb(start_date)
   
   
-  
+  for (i in 2:delta){
+    start_date <- as.character(as.Date(start_date) + 1)
+    game_ids <- rbind(game_ids, get_game_pks_mlb(start_date), fill = TRUE)
+  }
   keys <- game_ids[game_ids$teams.home.team.name == team | teams.away.team.name == team]$game_pk
   #get all pitches 
   
   pitches <- get_pbp_mlb(keys[1])
   
+  if (length(keys) >= 2){
+    
+    for (k in 2:length(keys)){
+      
+      current_key <- keys[k]
+      
+      pitches <- rbind(pitches, get_pbp_mlb(current_key), fill = TRUE)}}
  
   return(pitches)}
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches(start_dat, tm)
+pitches <- get_pitches(start_dat, mnth, inc, tm)
 
 #select only relevant columns
 
@@ -102,15 +126,17 @@ pitches_filtered_renamed <- setnames(pitches_filtered, old = col_names,
 
 # Write to SQL server
 
-con <- dbConnect(odbc(),
-                      Driver = "SQL Server",
-                      Server = "KEVIN_laptop",
-                      Database = "mlb",
-                      Port = 1433)
+if (is_first_run){
+  dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = FALSE, temporary = FALSE,
+               overwrite = TRUE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
+               field.types = NULL, batch_rows = 1)
+} else{
 
 dbWriteTable(con, 'pitch_stg', data.frame(pitches_filtered_renamed), append = TRUE, temporary = FALSE,
              overwrite = FALSE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
-             field.types = NULL, batch_rows = 1)
+             field.types = NULL, batch_rows = 1)}
 
-dbGetQuery(con, 'exec dbo.mlb_pipeline @is_first_run = 0')
+dbGetQuery(con, paste('exec mlb_pipeline @is_first_run = ' , is_first_run[[1]][1] , ' @interval = ' , sql_interval, sep = ''))
+
+dbDisconnect(con)
 
