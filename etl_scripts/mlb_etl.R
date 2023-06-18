@@ -48,10 +48,10 @@ get_pitches <- function(start_date, team){
 #call the function to get data from the MLB api 
 
 pitches <- get_pitches(start_dat[[1]][1], tm)
-
+if (nrow(pitches) > 0){
 #select only relevant columns
 
-if (nrow(pitches) > 0){
+
 
 
 
@@ -120,19 +120,14 @@ pitches_filtered_renamed <- setnames(pitches_filtered, old = col_names,
 
 # Write to SQL server
 
-if (is_first_run == 1){
-  stg <- bq_table(project = 'apt-terrain-390117', dataset = 'mlb_db', table = 'pitch_stg')
 
- bq_table_upload(x=stg, values=data.frame(pitches_filtered_renamed), create_disposition='CREATE_IF_NEEDED', write_disposition='WRITE_APPEND')
+stg <- bq_table(project = 'apt-terrain-390117', dataset = 'mlb_db', table = 'pitch_stg')
 
-} else{
-
-dbWriteTable(con, 'mlb_db.pitch_stg', data.frame(pitches_filtered_renamed), append = TRUE, temporary = FALSE,
-             overwrite = FALSE, row.names = F, 'set encoding UTF-8', field.names = new_col_names,
-             field.types = NULL, batch_rows = 1)}
+bq_table_upload(x=stg, values=data.frame(pitches_filtered_renamed), create_disposition='CREATE_IF_NEEDED', write_disposition='WRITE_APPEND')
 }
 
-#dbGetQuery(con, paste('exec mlb_pipeline @is_first_run = ' , is_first_run[[1]][1] , ' @interval = ' , sql_interval, sep = ''))
+
+rs <- bq_perform_query('call mlb_db.mlb_pipeline(false)',project = 'apt-terrain-390117', dataset = 'mlb_db', billing = 'apt-terrain-390117' )
 
 dbDisconnect(con)
 
