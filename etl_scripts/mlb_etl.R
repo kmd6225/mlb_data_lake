@@ -6,26 +6,6 @@ library(bigrquery)
 library(dplyr)
 library(data.table)
 #-------------------------get pitch by pitch data for each game-------------------------------------
-
-# connect to the db
-
-con <- dbConnect(bigquery(),
-                 project = 'apt-terrain-390117' ,
-                 dataset = 'mlb_db',
-                 billing = 'apt-terrain-390117')
-
-
-#function for extracting pitch by pitch data
-
-start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
-
-is_first_run <- dbGetQuery(con, "select case when game_date = (select max(game_date) from config_param) then 1 else 0 end
-		from mlb_db.config_param
-		where prev_run_status = 'initial run'")
-tm <- 'Colorado Rockies'
-
-sql_interval <-  1
-
 get_pitches <- function(start_date, team){
   game_ids <- get_game_pks_mlb(start_date)
   
@@ -44,6 +24,28 @@ get_pitches <- function(start_date, team){
       pitches <- rbind(pitches, get_pbp_mlb(current_key), fill = TRUE)}}
  
   return(pitches)}
+# connect to the db
+
+con <- dbConnect(bigquery(),
+                 project = 'apt-terrain-390117' ,
+                 dataset = 'mlb_db',
+                 billing = 'apt-terrain-390117')
+
+
+
+
+start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
+
+while (as.Date(start_dat[[1]][1]) <= as.Date('2023-06-18')){
+
+is_first_run <- dbGetQuery(con, "select case when game_date = (select max(game_date) from config_param) then 1 else 0 end
+		from mlb_db.config_param
+		where prev_run_status = 'initial run'")
+tm <- 'Colorado Rockies'
+
+sql_interval <-  1
+
+
 
 #call the function to get data from the MLB api 
 
@@ -128,6 +130,13 @@ bq_table_upload(x=stg, values=data.frame(pitches_filtered_renamed), create_dispo
 
 
 rs <- bq_perform_query('call mlb_db.mlb_pipeline(false)',project = 'apt-terrain-390117', dataset = 'mlb_db', billing = 'apt-terrain-390117' )
+
+print(start_dat)
+print('sleeping')
+Sys.sleep(120)
+print('waking up')
+start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
+}
 
 dbDisconnect(con)
 
