@@ -61,7 +61,7 @@ QUERY = (
 )
 
 pitches = client.query(QUERY)
-pitches = pitches.to-dataframe()
+pitches = pitches.to_dataframe()
 pitches = pitches[pitches['matchup_pitcher_fullName'] == pitcher]
 
 p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_number'].tolist()).tolist())
