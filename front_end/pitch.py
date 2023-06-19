@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 
-def plot_zone(p_type, pitches, pitcher):
+def plot_zone(p_type, pitches):
     
         
     joint_chart = sns.jointplot(pitches[(pitches['pitch_number'] == p_type) & (
@@ -37,7 +37,7 @@ def plot_zone(p_type, pitches, pitcher):
     
     
     # Add a title and legend
-    ax.set_title('{} {}: Stikes/Fouls/Balls Hit'.format(pitcher, p_type),
+    ax.set_title('Stikes/Fouls/Balls Hit',
                  y=1.2, fontsize=18)
     ax.legend(loc=3, frameon=True, shadow=True)
     
@@ -50,7 +50,7 @@ credentials = service_account.Credentials.from_service_account_file('/home/kduba
 project_id = 'apt-terrain-390117'
 client = bigquery.Client(credentials= credentials,project=project_id)
 
-pitcher = st.text_input = ('Insert Pitcher', 'German Marquez')
+
 
 # Perform a query.
 QUERY = (
@@ -59,13 +59,15 @@ QUERY = (
 
 )
 
+
 pitches_0 = client.query(QUERY)
 pitches_0 = pitches_0.to_dataframe()
-pitches = pitches_0[pitches_0['matchup_pitcher_fullName'] == pitcher]
+pitcher = st.text_input = ('Insert Pitcher', 'German Marquez')
+pitches = pitches_0
 
 p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_Number'].tolist()).tolist())
 
-chart = plot_zone(p_type_v, pitches, pitcher)
+chart = plot_zone(p_type_v, pitches)
 
 st.pyplot(chart)
 
