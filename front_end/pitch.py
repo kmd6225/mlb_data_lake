@@ -45,7 +45,7 @@ def plot_zone(p_type, pitches):
 
 client = bigquery.Client()
 
-pitcher = st.text_input = ('Insert Pitcher Name')
+pitcher = st.text_input = ('Insert Pitcher', 'German Marquez')
 # Perform a query.
 QUERY = (
     
