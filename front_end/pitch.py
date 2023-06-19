@@ -55,14 +55,13 @@ pitcher = st.text_input = ('Insert Pitcher', 'German Marquez')
 # Perform a query.
 QUERY = (
     
-'select matchup_pitcher_fullName, pitch_Number, details_call_description, pitch_Data_coordinates_x, pitch_Data_coordinates_y'
-'from mlb_db.pitch_fact'
+'select matchup_pitcher_fullName, pitch_Number, details_call_description, pitch_Data_coordinates_x, pitch_Data_coordinates_y from mlb_db.pitch_fact'
 
 )
 
-pitches = client.query(QUERY)
-pitches = pitches.to_dataframe()
-pitches = pitches[pitches['matchup_pitcher_fullName'] == pitcher]
+pitches_0 = client.query(QUERY)
+pitches_0 = pitches_0.to_dataframe()
+pitches = pitches_0[pitches_0['matchup_pitcher_fullName'] == pitcher]
 
 p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_number'].tolist()).tolist())
 
