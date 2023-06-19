@@ -63,7 +63,7 @@ pitches_0 = client.query(QUERY)
 pitches_0 = pitches_0.to_dataframe()
 pitches = pitches_0[pitches_0['matchup_pitcher_fullName'] == pitcher]
 
-p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_number'].tolist()).tolist())
+p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_Number'].tolist()).tolist())
 
 chart = plot_zone(p_type_v, pitches, pitcher)
 
