@@ -9,11 +9,11 @@ import numpy as np
 
 def plot_zone(p_type, pitches):
     
+    df = pitches[(pitches['pitch_Number'] == p_type) & (
+                                        pitches['details_call_description'].str.contains('Ball') == False) ]
         
-    joint_chart = sns.jointplot(pitches[(pitches['pitch_Number'] == p_type) & (
-                                        pitches['details_call_description'].str.contains('Ball') == False) ].pitch_Data_coordinates_x,
-                                    pitches[(pitches['pitch_Number'] == p_type) & (
-                                                                        pitches['details_call_description'].str.contains('Ball') == False)].pitch_Data_coordinates_y,
+    joint_chart = sns.jointplot(data = df, x = 'pitch_Data_coordinates_x',
+                                    y = 'pitch_Data_coordinates_y',
                                      color='r',
                                      marker='o',
                                      s=50,
