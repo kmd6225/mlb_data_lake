@@ -10,9 +10,9 @@ import numpy as np
 def plot_zone(p_type, pitches):
     
         
-    joint_chart = sns.jointplot(pitches[(pitches['pitch_number'] == p_type) & (
+    joint_chart = sns.jointplot(pitches[(pitches['pitch_Number'] == p_type) & (
                                         pitches['details_call_description'].str.contains('Ball') == False) ].pitch_Data_coordinates_x,
-                                    pitches[(pitches['pitch_number'] == p_type) & (
+                                    pitches[(pitches['pitch_Number'] == p_type) & (
                                                                         pitches['details_call_description'].str.contains('Ball') == False)].pitch_Data_coordinates_y,
                                      color='r',
                                      marker='o',
@@ -24,8 +24,8 @@ def plot_zone(p_type, pitches):
     
     joint_chart.fig.set_size_inches(6,6)
     
-    joint_chart.x = pitches[(pitches['pitch_number'] == p_type) & (pitches['details_call_description'].str.contains('Ball'))].pitch_Data_coordinates_x
-    joint_chart.y =  pitches[(pitches['pitch_number'] == p_type) & (pitches['details_call_description'].str.contains('Ball'))].pitch_Data_coordinates_y
+    joint_chart.x = pitches[(pitches['pitch_Number'] == p_type) & (pitches['details_call_description'].str.contains('Ball'))].pitch_Data_coordinates_x
+    joint_chart.y =  pitches[(pitches['pitch_Number'] == p_type) & (pitches['details_call_description'].str.contains('Ball'))].pitch_Data_coordinates_y
     joint_chart.plot_joint(plt.scatter, marker='o',
                            c='b', s=50,label='Balls')
     
