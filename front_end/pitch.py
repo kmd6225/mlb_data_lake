@@ -43,7 +43,11 @@ def plot_zone(p_type, pitches, pitcher):
     return(joint_chart)
 
 
-client = bigquery.Client()
+
+
+credentials = service_account.Credentials.from_service_account_file('/home/kdubartell/compute_keys.json')
+project_id = 'apt-terrain-390117'
+client = bigquery.Client(credentials= credentials,project=project_id)
 
 pitcher = st.text_input = ('Insert Pitcher', 'German Marquez')
 
@@ -56,7 +60,7 @@ QUERY = (
 )
 
 pitches = client.query(QUERY)
-pitches = pd.DataFrame(pitches.result())
+pitches = pitches.to-dataframe()
 pitches = pitches[pitches['matchup_pitcher_fullName'] == pitcher]
 
 p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_number'].tolist()).tolist())
