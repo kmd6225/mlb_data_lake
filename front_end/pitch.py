@@ -53,7 +53,8 @@ QUERY = (
 'from mlb_db.pitch_fact'
 'where matchup_pitcher_fullName = {})'.format(pitcher))
 
-pitches = client.query(QUERY).result()
+pitches = client.query(QUERY)
+pitches = pd.DataFrame(pitches.result())
 
 
 p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_number'].tolist()).tolist())
