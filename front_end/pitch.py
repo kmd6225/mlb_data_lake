@@ -1,4 +1,5 @@
 from google.cloud import bigquery 
+from google.oauth2 import service_account
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
