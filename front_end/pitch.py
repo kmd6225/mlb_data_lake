@@ -51,7 +51,7 @@ pitcher = st.text_input = ('Insert Pitcher', 'German Marquez')
 QUERY = (
     
 'select matchup_pitcher_fullName, pitch_Number, details_call_description, pitch_Data_coordinates_x, pitch_Data_coordinates_y'
-'from mlb_db.pitch_fact'
+'from pitch_fact'
 
 )
 
