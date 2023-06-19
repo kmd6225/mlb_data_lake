@@ -1,13 +1,12 @@
+from google.cloud import bigquery 
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-pitches = pd.read_csv('C:/Users/kduba/Downloads/bqtest.csv')
 
-
-def plot_zone(p_type):
+def plot_zone(p_type, pitches):
     
         
     joint_chart = sns.jointplot(pitches[(pitches['pitch_number'] == p_type) & (
@@ -43,9 +42,23 @@ def plot_zone(p_type):
     
     return(joint_chart)
 
+
+client = bigquery.Client()
+
+pitcher = st.text_input = ('Insert Pitcher Name')
+# Perform a query.
+QUERY = (
+    
+'select pitch_Number, details_call_description, pitch_Data_coordinates_x, pitch_Data_coordinates_y'
+'from mlb_db.pitch_fact'
+'where matchup_pitcher_fullName = {})'.format(pitcher))
+
+pitches = client.query(QUERY)
+
+
 p_type_v = st.select_slider('select a pitch type', options = np.unique(pitches['pitch_number'].tolist()).tolist())
 
-chart = plot_zone(p_type_v)
+chart = plot_zone(p_type_v, pitches)
 
 st.pyplot(chart)
 
