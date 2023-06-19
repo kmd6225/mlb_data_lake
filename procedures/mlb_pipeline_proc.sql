@@ -1,50 +1,28 @@
-create procedure mlb_pipeline 
-@is_first_run int, 
-@interval int
-as 
-	if @is_first_run = 1
-		begin
-			declare @v_dyn_sql_1 nvarchar(max)
-			declare @starting_date date
-			declare cursor_config_1 cursor for 
-				select game_date from config_param where prev_run_status = 'intial run'
-			set @v_dyn_sql_1 = 'select * into pitch_fact from new_pitch_vw'
-			execute sp_executesql  @v_dyn_sql_1
-			open cursor_config_1
-			fetch next from cursor_config_1 into @starting_date
+create or replace procedure mlb_db.mlb_pipeline(is_first_run bool)
+begin 
+declare v_dyn_sql_1 string;
+declare v_interval int64;
+declare starting_date date;
+declare v_dyn_sql_2 string;
+declare max_date date;
 
-			while @@FETCH_STATUS = 0
+set v_interval = 1;
+if is_first_run = true then
+		set v_dyn_sql_1 = 'create table mlb_db.pitch_fact as select * from mlb_db.new_pitch_vw';
+		execute immediate v_dyn_sql_1;
 
-			begin 
+		set starting_date = (select game_date from mlb_db.config_param where prev_run_status = 'initial run');
+
+    update mlb_db.config_param set run_status = 'success' where game_date = starting_date;
+		update mlb_db.config_param set next_game_date = date_add(starting_date, INTERVAL v_interval DAY) where game_date = starting_date;
+	  insert into mlb_db.config_param values(concat('report run at ',cast(date_trunc(CURRENT_TIMESTAMP, DAY) as string)), date_add(starting_date, INTERVAL v_interval DAY), null, null);
 		
-				update config_param set run_status = 'success' where game_date = @starting_date
-				update config_param set next_game_date = dateadd(day,@interval,@starting_date) where game_date = @starting_date
-				insert into config_param values(concat('report run at ',cast(datetrunc(day,CURRENT_TIMESTAMP) as nvarchar(max))), dateadd(day,@interval,@starting_date), null, null)
-				fetch next from cursor_config_1 into @starting_date
-			end
-			close cursor_config_1
-			deallocate cursor_config_1
-		end
-	else
-		begin 
-			declare @v_dyn_sql_2 nvarchar(max)
-			declare @max_date date
-			declare cursor_config_2 cursor for 
-				select max(game_date) from config_param
-			set @v_dyn_sql_2 = 'insert  into pitch_fact select * from new_pitch_vw where game_key not in (select distinct game_key from new_pitch_vw)'
-			execute sp_executesql  @v_dyn_sql_2
-			open cursor_config_2 
-			fetch next from cursor_config_2 into @max_date
-
-			while @@FETCH_STATUS = 0
-
-			begin 
-		
-				update config_param set run_status = 'success' where game_date = @max_date
-				update config_param set next_game_date = dateadd(day,@interval,@max_date) where game_date = @max_date
-				insert into config_param values(concat('report run at ',cast(datetrunc(day,CURRENT_TIMESTAMP) as nvarchar(max))), dateadd(day,@interval,@max_date), null, null)
-				fetch next from cursor_config_2 into @max_date
-			end
-			close cursor_config_2
-			deallocate cursor_config_2
+else
+  set v_dyn_sql_2 = 'insert into mlb_db.pitch_fact select distinct * from mlb_db.new_pitch_vw where game_key not in (select distinct game_key from mlb_db.pitch_fact)';
+	execute immediate  v_dyn_sql_2;
+  set max_date = (select max(game_date) from mlb_db.config_param);
+	update mlb_db.config_param set run_status = 'success' where game_date = max_date;
+	update mlb_db.config_param set next_game_date = date_add(max_date, INTERVAL v_interval DAY) where game_date = max_date;
+	insert into mlb_db.config_param values(concat('report run at ',cast(date_trunc(CURRENT_TIMESTAMP, DAY) as string)), date_add(max_date, INTERVAL v_interval DAY), null, null);
+  end if;
 	end
