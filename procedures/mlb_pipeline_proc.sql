@@ -112,5 +112,37 @@ begin
    execute immediate v_dyn_sql_4;
     end for;
   end;
-  end;
 
+
+  --- create game fact
+  begin 
+  create temp table game_fact_inter as 
+  select game_date, 
+         game_key,
+         FARM_FINGERPRINT(home_team) as home_team_key,
+         FARM_FINGERPRINT(away_team) as away_team_key ,
+         max(result_home_Score) as home_score, 
+         max(result_away_Score) as away_score
+  from `mlb_db.pitch_stg`
+  group by 1,2,3,4;
+  end; 
+  insert into mlb_db.game_fact select * from game_fact_inter where concat(game_date,home_team_key,away_team_key) not in 
+    (select concat(game_date,home_team_key,away_team_key) from mlb_db.game_fact);
+
+-- mlb config param update
+begin
+  declare max_date date;
+  declare v_interval int64;
+
+  set max_date = (select max(game_date) from mlb_db.config_param);
+  set v_interval = 1;
+	update mlb_db.config_param set run_status = 'success' where game_date = max_date;
+	update mlb_db.config_param set next_game_date = date_add(max_date, INTERVAL v_interval DAY) where game_date = max_date;
+	insert into mlb_db.config_param values(concat('report run at ',cast(date_trunc(CURRENT_TIMESTAMP, DAY) as string)), date_add(max_date, INTERVAL v_interval DAY), null, null);
+end;
+
+  ---truncate stage after completion to avoid duplicates
+
+  ---truncate table mlb_db.pitch_stg;
+
+  end;
