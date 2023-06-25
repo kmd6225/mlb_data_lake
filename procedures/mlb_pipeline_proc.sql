@@ -108,8 +108,9 @@ begin
       begin 
       execute immediate v_dyn_sql_2 || v_dyn_sql_3;
       end;
-   set v_dyn_sql_4 = "insert into mlb_db."||var1||"_fact select * from "||var1||"_fact_inter where concat("||var1||"_key,"||var2||"_team_key) not in (select concat("||var1||"_key,"||var2||"_team_key) from mlb_db."||var1||"_fact);";
+   set v_dyn_sql_4 = "insert into mlb_db."||var1||"_fact select * from "||var1||"_fact_inter where concat("||var1||"_key,"||var2||"_team_key, game_key) not in (select concat("||var1||"_key,"||var2||"_team_key, game_key) from mlb_db."||var1||"_fact);";
    execute immediate v_dyn_sql_4;
     end for;
   end;
   end;
+
