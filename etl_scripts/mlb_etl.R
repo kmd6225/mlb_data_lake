@@ -6,11 +6,11 @@ library(bigrquery)
 library(dplyr)
 library(data.table)
 #-------------------------get pitch by pitch data for each game-------------------------------------
-get_pitches <- function(start_date, team){
+get_pitches <- function(start_date){
   game_ids <- get_game_pks_mlb(start_date)
   
   
-  keys <- game_ids[game_ids$teams.home.team.name == team | game_ids$teams.away.team.name == team,]$game_pk
+  keys <- game_ids$game_pk
   #get all pitches 
   
   pitches <- get_pbp_mlb(keys[1])
@@ -36,20 +36,12 @@ con <- dbConnect(bigquery(),
 
 start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
 
-while (as.Date(start_dat[[1]][1]) <= as.Date('2023-06-18')){
-
-is_first_run <- dbGetQuery(con, "select case when game_date = (select max(game_date) from config_param) then 1 else 0 end
-		from mlb_db.config_param
-		where prev_run_status = 'initial run'")
-tm <- 'Colorado Rockies'
-
-sql_interval <-  1
-
+while (as.Date(start_dat[[1]][1]) <= as.Date('2023-04-10')){
 
 
 #call the function to get data from the MLB api 
 
-pitches <- get_pitches(start_dat[[1]][1], tm)
+pitches <- get_pitches(start_dat[[1]][1])
 if (nrow(pitches) > 0){
 #select only relevant columns
 
@@ -125,15 +117,15 @@ pitches_filtered_renamed <- setnames(pitches_filtered, old = col_names,
 
 stg <- bq_table(project = 'apt-terrain-390117', dataset = 'mlb_db', table = 'pitch_stg')
 
-bq_table_upload(x=stg, values=data.frame(pitches_filtered_renamed), create_disposition='CREATE_IF_NEEDED', write_disposition='WRITE_APPEND')
+bq_table_upload(x=stg, values=data.frame(pitches_filtered_renamed), create_disposition='CREATE_IF_NEEDED', write_disposition='WRITE_TRUNCATE')
 }
 
 
-rs <- bq_perform_query('call mlb_db.mlb_pipeline(false)',project = 'apt-terrain-390117', dataset = 'mlb_db', billing = 'apt-terrain-390117' )
+rs <- bq_perform_query('call mlb_db.mlb_pipeline()',project = 'apt-terrain-390117', dataset = 'mlb_db', billing = 'apt-terrain-390117' )
 
 print(start_dat)
 print('sleeping')
-Sys.sleep(120)
+Sys.sleep(15)
 print('waking up')
 start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
 }
