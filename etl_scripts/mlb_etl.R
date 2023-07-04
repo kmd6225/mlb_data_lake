@@ -35,8 +35,8 @@ con <- dbConnect(bigquery(),
 
 
 start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
-
-while (as.Date(start_dat[[1]][1]) <= as.Date('2023-04-10')){
+counter <- 1
+while (counter <= 7){
 
 
 #call the function to get data from the MLB api 
@@ -127,6 +127,7 @@ print(start_dat)
 print('sleeping')
 Sys.sleep(15)
 print('waking up')
+counter <- counter + 1
 start_dat <- dbGetQuery(con, 'select max(game_date) from mlb_db.config_param')
 }
 
